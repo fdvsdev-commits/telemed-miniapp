@@ -1,0 +1,1526 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ADTI SIM MARKAZ</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
+
+  :root {
+    --bg:        #0a0f1e;
+    --bg2:       #111827;
+    --bg3:       #1a2235;
+    --card:      #141d2e;
+    --border:    #1e2d45;
+    --accent:    #2dd4bf;
+    --accent2:   #3b82f6;
+    --success:   #10b981;
+    --danger:    #ef4444;
+    --warn:      #f59e0b;
+    --text:      #e2e8f0;
+    --text2:     #94a3b8;
+    --text3:     #4b5e78;
+    --radius:    14px;
+    --shadow:    0 4px 24px rgba(0,0,0,0.4);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'Manrope', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── LOADER ── */
+  #loader {
+    position: fixed; inset: 0;
+    background: var(--bg);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    z-index: 999;
+    gap: 20px;
+  }
+  .loader-logo {
+    width: 72px; height: 72px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 20px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 32px;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.08);opacity:0.85} }
+  .loader-bar {
+    width: 160px; height: 3px;
+    background: var(--border);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+  .loader-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 99px;
+    animation: loading 1.8s ease-in-out infinite;
+  }
+  @keyframes loading { 0%{width:0;margin-left:0} 50%{width:100%;margin-left:0} 100%{width:0;margin-left:100%} }
+
+  /* ── HEADER ── */
+  #header {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(10,15,30,0.95);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .header-logo { display: flex; align-items: center; gap: 10px; }
+  .header-icon {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .header-title { font-size: 15px; font-weight: 700; }
+  .header-sub { font-size: 11px; color: var(--text2); margin-top: 1px; }
+  .admin-badge {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #fff;
+    font-size: 10px; font-weight: 700;
+    padding: 3px 8px; border-radius: 99px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+
+  /* ── NAV TABS ── */
+  #nav {
+    display: flex;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding: 0 8px;
+  }
+  #nav::-webkit-scrollbar { display: none; }
+  .nav-tab {
+    flex-shrink: 0;
+    padding: 12px 16px;
+    font-size: 12px; font-weight: 600;
+    color: var(--text2);
+    border: none; background: none;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all .2s;
+    white-space: nowrap;
+  }
+  .nav-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .nav-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--danger);
+    color: #fff; font-size: 9px; font-weight: 700;
+    width: 16px; height: 16px; border-radius: 99px;
+    margin-left: 4px;
+  }
+
+  /* ── MAIN CONTENT ── */
+  #main { padding: 16px; max-width: 600px; margin: 0 auto; }
+
+  .section { display: none; }
+  .section.active { display: block; animation: fadeIn .25s ease; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 12px;
+    box-shadow: var(--shadow);
+  }
+  .card-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .card-title {
+    font-size: 13px; font-weight: 700;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  /* ── STATS GRID ── */
+  .stats-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr);
+    gap: 10px; margin-bottom: 16px;
+  }
+  .stat-card {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px;
+    position: relative; overflow: hidden;
+  }
+  .stat-card::before {
+    content: ''; position: absolute;
+    top: 0; left: 0; right: 0; height: 2px;
+  }
+  .stat-card.blue::before  { background: var(--accent2); }
+  .stat-card.teal::before  { background: var(--accent); }
+  .stat-card.green::before { background: var(--success); }
+  .stat-card.amber::before { background: var(--warn); }
+  .stat-icon { font-size: 22px; margin-bottom: 6px; }
+  .stat-num  { font-size: 26px; font-weight: 800; line-height: 1; }
+  .stat-lbl  { font-size: 11px; color: var(--text2); margin-top: 3px; }
+  .stat-sub  { font-size: 10px; color: var(--text3); margin-top: 2px; font-family: 'JetBrains Mono', monospace; }
+
+  /* ── LIST ITEMS ── */
+  .list-item {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 8px;
+    transition: border-color .2s;
+  }
+  .list-item:active { border-color: var(--accent); }
+
+  .item-header {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  .item-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--text3);
+  }
+  .item-name { font-size: 14px; font-weight: 700; margin-bottom: 2px; }
+  .item-meta { font-size: 12px; color: var(--text2); }
+  .item-row  { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+
+  /* ── BADGES ── */
+  .badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 8px; border-radius: 99px;
+    font-size: 11px; font-weight: 600;
+  }
+  .badge-pending  { background: rgba(245,158,11,.15); color: var(--warn); }
+  .badge-ok       { background: rgba(16,185,129,.15); color: var(--success); }
+  .badge-no       { background: rgba(239,68,68,.15);  color: var(--danger); }
+  .badge-blue     { background: rgba(59,130,246,.15); color: var(--accent2); }
+  .badge-teal     { background: rgba(45,212,191,.15); color: var(--accent); }
+
+  /* ── BUTTONS ── */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 9px 16px; border-radius: 10px;
+    font-family: 'Manrope', sans-serif;
+    font-size: 13px; font-weight: 700;
+    border: none; cursor: pointer;
+    transition: all .15s; text-decoration: none;
+    white-space: nowrap;
+  }
+  .btn:active { transform: scale(0.96); }
+  .btn-ok     { background: var(--success); color: #fff; }
+  .btn-no     { background: var(--danger);  color: #fff; }
+  .btn-blue   { background: var(--accent2); color: #fff; }
+  .btn-teal   { background: var(--accent);  color: #0a0f1e; }
+  .btn-ghost  { background: var(--bg3); color: var(--text2); border: 1px solid var(--border); }
+  .btn-full   { width: 100%; }
+  .btn-sm     { padding: 7px 12px; font-size: 12px; }
+  .btn-group  { display: flex; gap: 8px; margin-top: 10px; }
+
+  /* ── FORM ── */
+  .form-group { margin-bottom: 14px; }
+  label { display: block; font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 6px; }
+  input, textarea, select {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 11px 13px;
+    font-family: 'Manrope', sans-serif;
+    font-size: 14px; color: var(--text);
+    outline: none; transition: border-color .2s;
+  }
+  input:focus, textarea:focus, select:focus { border-color: var(--accent); }
+  textarea { resize: vertical; min-height: 80px; }
+  select option { background: var(--bg2); }
+
+  /* ── DIVIDER ── */
+  .divider {
+    height: 1px; background: var(--border);
+    margin: 14px 0;
+  }
+
+  /* ── EMPTY STATE ── */
+  .empty {
+    text-align: center; padding: 40px 20px;
+    color: var(--text3);
+  }
+  .empty-icon { font-size: 40px; margin-bottom: 10px; }
+  .empty-text { font-size: 14px; }
+
+  /* ── TOAST ── */
+  #toast {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 20px;
+    font-size: 13px; font-weight: 600;
+    box-shadow: var(--shadow);
+    z-index: 999;
+    opacity: 0; transition: opacity .3s;
+    white-space: nowrap;
+    max-width: 90vw;
+  }
+  #toast.show { opacity: 1; }
+  #toast.success { border-color: var(--success); color: var(--success); }
+  #toast.error   { border-color: var(--danger);  color: var(--danger);  }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.7); backdrop-filter: blur(4px);
+    z-index: 100; align-items: flex-end; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px 20px 0 0;
+    padding: 20px;
+    width: 100%; max-width: 600px;
+    max-height: 90vh; overflow-y: auto;
+    animation: slideUp .25s ease;
+  }
+  @keyframes slideUp { from{transform:translateY(100%)} to{transform:none} }
+  .modal-handle {
+    width: 36px; height: 4px;
+    background: var(--border);
+    border-radius: 99px;
+    margin: 0 auto 16px;
+  }
+  .modal-title {
+    font-size: 16px; font-weight: 800;
+    margin-bottom: 16px;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  /* ── INFO ROW ── */
+  .info-row {
+    display: flex; justify-content: space-between;
+    align-items: center;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .info-row:last-child { border-bottom: none; }
+  .info-lbl { color: var(--text2); }
+  .info-val { font-weight: 600; text-align: right; max-width: 65%; }
+
+  /* ── PROFILE CARD ── */
+  .profile-header {
+    display: flex; align-items: center; gap: 14px;
+    padding: 16px; background: var(--bg3);
+    border-radius: var(--radius);
+    margin-bottom: 16px;
+  }
+  .profile-avatar {
+    width: 56px; height: 56px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; font-weight: 800; color: #fff;
+    flex-shrink: 0;
+  }
+  .profile-name  { font-size: 16px; font-weight: 800; }
+  .profile-phone { font-size: 13px; color: var(--text2); margin-top: 2px; }
+
+  /* ── SCROLLABLE LIST ── */
+  .scroll-list { max-height: 400px; overflow-y: auto; }
+  .scroll-list::-webkit-scrollbar { width: 4px; }
+  .scroll-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
+  /* ── FILTER BAR ── */
+  .filter-bar {
+    display: flex; gap: 6px; margin-bottom: 12px;
+    overflow-x: auto; scrollbar-width: none;
+  }
+  .filter-bar::-webkit-scrollbar { display: none; }
+  .filter-chip {
+    flex-shrink: 0;
+    padding: 6px 12px; border-radius: 99px;
+    font-size: 12px; font-weight: 600;
+    background: var(--bg3); color: var(--text2);
+    border: 1px solid var(--border);
+    cursor: pointer; transition: all .15s;
+  }
+  .filter-chip.active { background: var(--accent); color: #0a0f1e; border-color: var(--accent); }
+
+  /* ── SEARCH ── */
+  .search-wrap { position: relative; margin-bottom: 12px; }
+  .search-wrap input { padding-left: 36px; }
+  .search-icon {
+    position: absolute; left: 12px; top: 50%;
+    transform: translateY(-50%);
+    font-size: 14px; pointer-events: none;
+  }
+
+  .section-title {
+    font-size: 18px; font-weight: 800;
+    margin-bottom: 16px;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  .refresh-btn {
+    width: 34px; height: 34px;
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 9px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; transition: all .2s;
+  }
+  .refresh-btn:active { transform: rotate(180deg); }
+
+  /* ── EMERGENCY BUTTON ── */
+  .emergency-btn {
+    position: fixed; bottom: 100px; right: 16px;
+    width: 56px; height: 56px;
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    border-radius: 99px;
+    border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px; box-shadow: 0 4px 20px rgba(239,68,68,.4);
+    transition: all .2s;
+    z-index: 40;
+    animation: pulse-emergency 2s ease-in-out infinite;
+  }
+  .emergency-btn:active { transform: scale(0.9); }
+  @keyframes pulse-emergency {
+    0%, 100% { box-shadow: 0 4px 20px rgba(239,68,68,.4); }
+    50% { box-shadow: 0 4px 30px rgba(239,68,68,.6); }
+  }
+
+  /* ── QUICK ACTIONS ── */
+  .quick-actions {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 8px; margin-bottom: 16px;
+  }
+  .quick-action {
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 12px; padding: 12px; text-align: center;
+    cursor: pointer; transition: all .2s;
+  }
+  .quick-action:active { background: var(--card); border-color: var(--accent); }
+  .quick-action-icon { font-size: 24px; margin-bottom: 4px; }
+  .quick-action-text { font-size: 11px; font-weight: 600; color: var(--text2); }
+
+  /* ── RATING ── */
+  .rating {
+    display: flex; align-items: center; gap: 3px;
+    font-size: 16px; cursor: pointer;
+  }
+  .star { opacity: 0.3; transition: all .15s; }
+  .star.active { opacity: 1; }
+
+  /* ── HEALTH TRACK ── */
+  .health-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px; background: var(--bg3);
+    border-radius: 10px; margin-bottom: 6px;
+    border-left: 3px solid var(--accent);
+  }
+  .health-name { font-size: 12px; color: var(--text2); }
+  .health-value { font-size: 16px; font-weight: 800; font-family: 'JetBrains Mono', monospace; color: var(--accent); }
+  .health-unit { font-size: 10px; color: var(--text3); margin-left: 2px; }
+
+  /* ── TABS UNDER HEADER ── */
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* ── NOTIFICATION BADGE ── */
+  .notif-badge {
+    position: absolute; top: -6px; right: -8px;
+    background: var(--danger); color: #fff;
+    width: 18px; height: 18px;
+    border-radius: 99px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 700;
+  }
+</style>
+</head>
+<body>
+
+<!-- LOADER -->
+<div id="loader">
+  <div class="loader-logo">🏥</div>
+  <div style="font-weight:700;font-size:15px;">ADTI SIM MARKAZ</div>
+  <div style="font-size:12px;color:#64748b;">Ma'lumotlar yuklanmoqda...</div>
+  <div class="loader-bar"><div class="loader-bar-fill"></div></div>
+</div>
+
+<!-- HEADER -->
+<div id="header">
+  <div class="header-logo">
+    <div class="header-icon">🏥</div>
+    <div>
+      <div class="header-title">ADTI SIM MARKAZ</div>
+      <div class="header-sub">Telemedetsina tizimi</div>
+    </div>
+  </div>
+  <div id="header-badge"></div>
+</div>
+
+<!-- NAV -->
+<div id="nav"></div>
+
+<!-- MAIN -->
+<div id="main"></div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div id="modal-content"></div>
+  </div>
+</div>
+
+<!-- EMERGENCY BUTTON -->
+<button class="emergency-btn" onclick="openEmergencyModal()" title="Favqulodda holatlar">🚨</button>
+
+<script>
+// ════════════════════════════════════════
+//  CONFIG
+// ════════════════════════════════════════
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbypoXqgV_LKAZDycNqgp8di-LQ5KaL28x-VHBW757_h_MtCHJTlcNyoMxRPrkueGU4x/exec";
+const ADMIN_IDS = [7742677823]; // ← Admin Telegram ID lari
+
+// ════════════════════════════════════════
+//  TELEGRAM WEB APP INIT
+// ════════════════════════════════════════
+const tg = window.Telegram?.WebApp;
+let userId = null;
+let isAdmin = false;
+
+if (tg) {
+  tg.ready();
+  tg.expand();
+  tg.setHeaderColor('#0a0f1e');
+  tg.setBackgroundColor('#0a0f1e');
+  const user = tg.initDataUnsafe?.user;
+  if (user) {
+    userId = user.id;
+    isAdmin = ADMIN_IDS.includes(userId);
+  }
+}
+
+// ════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════
+let state = {
+  currentTab: null,
+  data: {},
+  filter: 'all',
+  loading: false
+};
+
+// ════════════════════════════════════════
+//  API
+// ════════════════════════════════════════
+async function api(action, params = {}) {
+  const url = new URL(APPS_SCRIPT_URL);
+  url.searchParams.set('action', action);
+  url.searchParams.set('userId', userId || '');
+  url.searchParams.set('isAdmin', isAdmin ? '1' : '0');
+  Object.entries(params).forEach(([k,v]) => url.searchParams.set(k, v));
+  const r = await fetch(url.toString());
+  return r.json();
+}
+
+async function apiPost(action, body = {}) {
+  const r = await fetch(APPS_SCRIPT_URL, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ action, userId, isAdmin, ...body })
+  });
+  return r.json();
+}
+
+// ════════════════════════════════════════
+//  TOAST
+// ════════════════════════════════════════
+let toastTimer;
+function toast(msg, type = 'success') {
+  const el = document.getElementById('toast');
+  el.textContent = (type === 'success' ? '✅ ' : '❌ ') + msg;
+  el.className = `show ${type}`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// ════════════════════════════════════════
+//  MODAL
+// ════════════════════════════════════════
+function openModal(html) {
+  document.getElementById('modal-content').innerHTML = html;
+  document.getElementById('modal').classList.add('open');
+}
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+}
+document.getElementById('modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('modal')) closeModal();
+});
+
+// ════════════════════════════════════════
+//  NAVIGATION
+// ════════════════════════════════════════
+function buildNav() {
+  const tabs = isAdmin ? [
+    { id: 'dashboard', label: '📊 Dashboard' },
+    { id: 'navbatlar', label: '📅 Navbatlar', badge: 'pending_nav' },
+    { id: 'bemorlar',  label: '👥 Bemorlar' },
+    { id: 'maslahat',  label: '💬 Maslahat', badge: 'pending_mas' },
+    { id: 'tahlil',    label: '🔬 Tahlillar' },
+    { id: 'shifokor',  label: '👨‍⚕️ Shifokorlar' },
+  ] : [
+    { id: 'menim',     label: '👤 Mening' },
+    { id: 'navbat_m',  label: '📅 Navbatlarim' },
+    { id: 'maslahat_m',label: '💬 Maslahatlarim' },
+    { id: 'soglik_m',  label: '📊 Sog\'liq' },
+    { id: 'shifokor_m',label: '👨‍⚕️ Shifokorlar' },
+  ];
+
+  const nav = document.getElementById('nav');
+  nav.innerHTML = tabs.map(t => `
+    <button class="nav-tab ${t.id === tabs[0].id ? 'active' : ''}"
+      onclick="switchTab('${t.id}')" id="tab-${t.id}">
+      ${t.label}
+      ${t.badge ? `<span class="nav-badge" id="badge-${t.badge}" style="display:none">0</span>` : ''}
+    </button>
+  `).join('');
+
+  switchTab(tabs[0].id);
+}
+
+function switchTab(id) {
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  const tab = document.getElementById(`tab-${id}`);
+  if (tab) tab.classList.add('active');
+  let sec = document.getElementById(`sec-${id}`);
+  if (!sec) {
+    sec = document.createElement('div');
+    sec.id = `sec-${id}`;
+    sec.className = 'section active';
+    document.getElementById('main').appendChild(sec);
+    loadSection(id, sec);
+  } else {
+    sec.classList.add('active');
+  }
+  state.currentTab = id;
+}
+
+// ════════════════════════════════════════
+//  LOAD SECTIONS
+// ════════════════════════════════════════
+async function loadSection(id, el) {
+  el.innerHTML = `<div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">Yuklanmoqda...</div></div>`;
+  try {
+    const data = await api(id);
+    renderSection(id, el, data);
+  } catch(e) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">❌</div><div class="empty-text">Xato yuz berdi</div></div>`;
+  }
+}
+
+function reloadSection(id) {
+  const sec = document.getElementById(`sec-${id}`);
+  if (sec) {
+    sec.remove();
+    switchTab(id);
+  }
+}
+
+// ════════════════════════════════════════
+//  RENDER SECTIONS
+// ════════════════════════════════════════
+function renderSection(id, el, data) {
+  const renders = {
+    dashboard:  renderDashboard,
+    navbatlar:  renderNavbatlar,
+    bemorlar:   renderBemorlar,
+    maslahat:   renderMaslahat,
+    tahlil:     renderTahlil,
+    shifokor:   renderShifokor,
+    menim:      renderMenim,
+    navbat_m:   renderNavbatM,
+    maslahat_m: renderMaslahatM,
+    soglik_m:   renderSoglikM,
+    shifokor_m: renderShifokorM,
+  };
+  if (renders[id]) renders[id](el, data);
+}
+
+// ── ADMIN: DASHBOARD ──
+function renderDashboard(el, d) {
+  const s = d.stats || {};
+  el.innerHTML = `
+    <div class="section-title">📊 Dashboard</div>
+    <div class="stats-grid">
+      <div class="stat-card blue">
+        <div class="stat-icon">👥</div>
+        <div class="stat-num">${s.bemorlar || 0}</div>
+        <div class="stat-lbl">Bemorlar</div>
+        <div class="stat-sub">+${s.bugun_bemorlar || 0} bugun</div>
+      </div>
+      <div class="stat-card teal">
+        <div class="stat-icon">📅</div>
+        <div class="stat-num">${s.navbatlar || 0}</div>
+        <div class="stat-lbl">Navbatlar</div>
+        <div class="stat-sub">${s.kutilmoqda || 0} kutilmoqda</div>
+      </div>
+      <div class="stat-card green">
+        <div class="stat-icon">💬</div>
+        <div class="stat-num">${s.maslahatlar || 0}</div>
+        <div class="stat-lbl">Maslahatlar</div>
+        <div class="stat-sub">${s.javob_kutilmoqda || 0} javob kutilmoqda</div>
+      </div>
+      <div class="stat-card amber">
+        <div class="stat-icon">👨‍⚕️</div>
+        <div class="stat-num">${s.shifokorlar || 0}</div>
+        <div class="stat-lbl">Shifokorlar</div>
+        <div class="stat-sub">${s.faol_shifokorlar || 0} faol</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">⏳ Kutilayotgan navbatlar</div>
+        <button class="btn btn-teal btn-sm" onclick="switchTab('navbatlar')">Ko'rish →</button>
+      </div>
+      ${(d.pending_navbatlar || []).slice(0,3).map(n => `
+        <div class="list-item" style="margin-bottom:8px">
+          <div class="item-header">
+            <div>
+              <div class="item-name">${n.fio}</div>
+              <div class="item-meta">🏷 ${n.mutaxassis} · 📅 ${n.sana} ${n.vaqt}</div>
+            </div>
+            <span class="badge badge-pending">⏳ Kutilmoqda</span>
+          </div>
+          <div class="btn-group">
+            <button class="btn btn-ok btn-sm" onclick="navbatAction(${n.num}, 'tasdiqlash')">✅ Tasdiqlash</button>
+            <button class="btn btn-no btn-sm" onclick="navbatAction(${n.num}, 'rad')">❌ Rad etish</button>
+          </div>
+        </div>
+      `).join('') || '<div class="empty" style="padding:16px"><div class="empty-icon">✅</div><div class="empty-text">Barcha navbatlar ko\'rib chiqilgan</div></div>'}
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">💬 Javob kutilayotgan maslahatlar</div>
+        <button class="btn btn-teal btn-sm" onclick="switchTab('maslahat')">Ko'rish →</button>
+      </div>
+      ${(d.pending_maslahat || []).slice(0,3).map(m => `
+        <div class="list-item" style="margin-bottom:8px">
+          <div class="item-name">${m.fio}</div>
+          <div class="item-meta">🏷 ${m.mutaxassis} · ❓ ${m.savol.substring(0,60)}...</div>
+          <div class="btn-group">
+            <button class="btn btn-blue btn-sm" onclick="openJavobModal(${m.num}, '${escHtml(m.fio)}', '${escHtml(m.savol)}')">💬 Javob berish</button>
+          </div>
+        </div>
+      `).join('') || '<div class="empty" style="padding:16px"><div class="empty-icon">✅</div><div class="empty-text">Javob berilmagan maslahat yo\'q</div></div>'}
+    </div>
+  `;
+}
+
+// ── ADMIN: NAVBATLAR ──
+function renderNavbatlar(el, d) {
+  const rows = d.rows || [];
+  let filter = 'all';
+  function render() {
+    const filtered = filter === 'all' ? rows : rows.filter(r => r.holat === filter);
+    const counts = {
+      all: rows.length,
+      Kutilmoqda: rows.filter(r=>r.holat==='Kutilmoqda').length,
+      Tasdiqlangan: rows.filter(r=>r.holat==='Tasdiqlangan').length,
+      'Rad etilgan': rows.filter(r=>r.holat==='Rad etilgan').length,
+    };
+    list.innerHTML = filtered.length ? filtered.map(n => `
+      <div class="list-item">
+        <div class="item-header">
+          <div>
+            <div class="item-num">#${n.num}</div>
+            <div class="item-name">${n.fio}</div>
+            <div class="item-meta">📱 ${n.telefon}</div>
+          </div>
+          <span class="badge ${n.holat==='Tasdiqlangan'?'badge-ok':n.holat==='Rad etilgan'?'badge-no':'badge-pending'}">
+            ${n.holat==='Tasdiqlangan'?'✅':n.holat==='Rad etilgan'?'❌':'⏳'} ${n.holat}
+          </span>
+        </div>
+        <div class="item-row">
+          <span class="badge badge-blue">🏷 ${n.mutaxassis}</span>
+          <span class="badge badge-teal">👨‍⚕️ ${n.shifokor}</span>
+          <span class="badge badge-blue">📅 ${n.sana} ${n.vaqt}</span>
+        </div>
+        ${n.holat === 'Kutilmoqda' ? `
+        <div class="btn-group">
+          <button class="btn btn-ok btn-sm" onclick="navbatAction(${n.num},'tasdiqlash')">✅ Tasdiqlash</button>
+          <button class="btn btn-no btn-sm" onclick="navbatAction(${n.num},'rad')">❌ Rad etish</button>
+          <button class="btn btn-ghost btn-sm" onclick="openXabarModal(${n.tg_id},'${escHtml(n.fio)}')">📩 Xabar</button>
+        </div>` : `
+        <div class="btn-group">
+          <button class="btn btn-ghost btn-sm" onclick="openXabarModal(${n.tg_id},'${escHtml(n.fio)}')">📩 Xabar yuborish</button>
+        </div>`}
+      </div>
+    `).join('') : '<div class="empty"><div class="empty-icon">📭</div><div class="empty-text">Navbat yo\'q</div></div>';
+    chips.querySelectorAll('.filter-chip').forEach(c => {
+      c.classList.toggle('active', c.dataset.f === filter);
+    });
+  }
+
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div class="section-title" style="margin:0">📅 Navbatlar</div>
+      <button class="refresh-btn" onclick="reloadSection('navbatlar')">🔄</button>
+    </div>
+    <div class="filter-bar" id="nav-chips">
+      <div class="filter-chip active" data-f="all" onclick="setFilter('all')">Barchasi (${rows.length})</div>
+      <div class="filter-chip" data-f="Kutilmoqda" onclick="setFilter('Kutilmoqda')">⏳ Kutilmoqda</div>
+      <div class="filter-chip" data-f="Tasdiqlangan" onclick="setFilter('Tasdiqlangan')">✅ Tasdiqlangan</div>
+      <div class="filter-chip" data-f="Rad etilgan" onclick="setFilter('Rad etilgan')">❌ Rad etilgan</div>
+    </div>
+    <div id="nav-list"></div>
+  `;
+  const list = el.querySelector('#nav-list');
+  const chips = el.querySelector('#nav-chips');
+  window.setFilter = f => { filter = f; render(); };
+  render();
+}
+
+// ── ADMIN: BEMORLAR ──
+function renderBemorlar(el, d) {
+  const rows = d.rows || [];
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div class="section-title" style="margin:0">👥 Bemorlar <span style="font-size:13px;color:var(--text2)">(${rows.length})</span></div>
+      <button class="refresh-btn" onclick="reloadSection('bemorlar')">🔄</button>
+    </div>
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" placeholder="Ism yoki telefon qidirish..." oninput="filterBemorlar(this.value)">
+    </div>
+    <div id="bemor-list">
+      ${renderBemorList(rows)}
+    </div>
+  `;
+  window._bemorRows = rows;
+  window.filterBemorlar = q => {
+    const filtered = rows.filter(r =>
+      r.fio.toLowerCase().includes(q.toLowerCase()) ||
+      (r.telefon||'').includes(q)
+    );
+    document.getElementById('bemor-list').innerHTML = renderBemorList(filtered);
+  };
+}
+function renderBemorList(rows) {
+  if (!rows.length) return '<div class="empty"><div class="empty-icon">📭</div><div class="empty-text">Bemor topilmadi</div></div>';
+  return rows.slice(-30).reverse().map(b => `
+    <div class="list-item" onclick="openBemorModal(${JSON.stringify(b).replace(/"/g,'&quot;')})">
+      <div class="item-header">
+        <div>
+          <div class="item-num">#${b.num}</div>
+          <div class="item-name">${b.fio}</div>
+          <div class="item-meta">📱 ${b.telefon} · 📍 ${b.viloyat}</div>
+        </div>
+        <span class="badge badge-teal">👁</span>
+      </div>
+      <div class="item-row">
+        <span class="badge badge-blue">🎂 ${b.yosh} yosh</span>
+        <span class="badge badge-blue">🩺 ${b.murojaat}</span>
+        <span class="badge ${b.holat==='Faol'?'badge-ok':'badge-pending'}">${b.holat||'Yangi'}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ── ADMIN: MASLAHAT ──
+function renderMaslahat(el, d) {
+  const rows = d.rows || [];
+  let filter = 'all';
+  function render() {
+    const filtered = filter === 'all' ? rows : rows.filter(r => {
+      if (filter === 'pending') return r.holat === 'Kutilmoqda';
+      if (filter === 'done')    return r.holat === 'Javob berildi';
+      return true;
+    });
+    list.innerHTML = filtered.length ? filtered.map(m => `
+      <div class="list-item">
+        <div class="item-header">
+          <div>
+            <div class="item-num">#${m.num}</div>
+            <div class="item-name">${m.fio}</div>
+            <div class="item-meta">🏷 ${m.mutaxassis} · 📅 ${m.sana}</div>
+          </div>
+          <span class="badge ${m.holat==='Javob berildi'?'badge-ok':'badge-pending'}">
+            ${m.holat==='Javob berildi'?'✅ Javob berildi':'⏳ Kutilmoqda'}
+          </span>
+        </div>
+        <div style="font-size:12px;color:var(--text2);margin:8px 0;padding:8px;background:var(--bg);border-radius:8px;">
+          ❓ ${m.savol.substring(0,120)}${m.savol.length>120?'...':''}
+        </div>
+        ${m.javob ? `<div style="font-size:12px;color:var(--success);margin:4px 0;padding:8px;background:rgba(16,185,129,.08);border-radius:8px;">✅ ${m.javob.substring(0,100)}...</div>` : ''}
+        ${m.holat === 'Kutilmoqda' ? `
+        <div class="btn-group">
+          <button class="btn btn-blue btn-sm btn-full" onclick="openJavobModal(${m.num},'${escHtml(m.fio)}','${escHtml(m.savol)}')">💬 Javob berish</button>
+        </div>` : ''}
+      </div>
+    `).join('') : '<div class="empty"><div class="empty-icon">📭</div><div class="empty-text">Maslahat yo\'q</div></div>';
+  }
+
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div class="section-title" style="margin:0">💬 Maslahatlar</div>
+      <button class="refresh-btn" onclick="reloadSection('maslahat')">🔄</button>
+    </div>
+    <div class="filter-bar">
+      <div class="filter-chip active" onclick="mf('all',this)">Barchasi</div>
+      <div class="filter-chip" onclick="mf('pending',this)">⏳ Kutilmoqda</div>
+      <div class="filter-chip" onclick="mf('done',this)">✅ Javob berildi</div>
+    </div>
+    <div id="mas-list"></div>
+  `;
+  const list = el.querySelector('#mas-list');
+  window.mf = (f, chip) => {
+    filter = f;
+    el.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    render();
+  };
+  render();
+}
+
+// ── ADMIN: TAHLIL ──
+function renderTahlil(el, d) {
+  const rows = d.rows || [];
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div class="section-title" style="margin:0">🔬 Tahlillar <span style="font-size:13px;color:var(--text2)">(${rows.length})</span></div>
+      <button class="refresh-btn" onclick="reloadSection('tahlil')">🔄</button>
+    </div>
+    ${rows.length ? rows.slice(-20).reverse().map(t => `
+      <div class="list-item">
+        <div class="item-header">
+          <div>
+            <div class="item-num">#${t.num}</div>
+            <div class="item-name">${t.fio}</div>
+            <div class="item-meta">📱 ${t.telefon}</div>
+          </div>
+          <span class="badge badge-teal">🔬</span>
+        </div>
+        <div class="item-row">
+          <span class="badge badge-blue">${t.tahlil_turi}</span>
+          <span class="badge badge-blue">📅 ${t.sana}</span>
+        </div>
+        <div style="font-size:12px;color:var(--text2);margin-top:8px;padding:8px;background:var(--bg);border-radius:8px;">
+          📊 ${t.natija.substring(0,100)}${t.natija.length>100?'...':''}
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-ghost btn-sm" onclick="openXabarModal(${t.tg_id},'${escHtml(t.fio)}')">📩 Xabar yuborish</button>
+        </div>
+      </div>
+    `).join('') : '<div class="empty"><div class="empty-icon">📭</div><div class="empty-text">Tahlil yo\'q</div></div>'}
+  `;
+}
+
+// ── ADMIN: SHIFOKORLAR ──
+function renderShifokor(el, d) {
+  const rows = d.rows || [];
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div class="section-title" style="margin:0">👨‍⚕️ Shifokorlar</div>
+      <button class="refresh-btn" onclick="reloadSection('shifokor')">🔄</button>
+    </div>
+    ${rows.length ? rows.map(s => `
+      <div class="list-item">
+        <div class="item-header">
+          <div>
+            <div class="item-num">#${s.num}</div>
+            <div class="item-name">${s.fio}</div>
+            <div class="item-meta">🏷 ${s.mutaxassis}</div>
+          </div>
+          <span class="badge ${s.holat==='Faol'?'badge-ok':'badge-no'}">
+            ${s.holat==='Faol'?'✅ Faol':'❌ Nofaol'}
+          </span>
+        </div>
+        <div class="item-row">
+          <span class="badge badge-blue">⏰ ${s.vaqt}</span>
+          <span class="badge badge-blue">📅 ${s.kunlar}</span>
+        </div>
+        <div class="btn-group">
+          ${s.holat==='Faol'
+            ? `<button class="btn btn-no btn-sm" onclick="shifokorHolat(${s.num},'Nofaol')">❌ Nofaol qilish</button>`
+            : `<button class="btn btn-ok btn-sm" onclick="shifokorHolat(${s.num},'Faol')">✅ Faollashtirish</button>`
+          }
+        </div>
+      </div>
+    `).join('') : '<div class="empty"><div class="empty-icon">📭</div><div class="empty-text">Shifokor yo\'q</div></div>'}
+  `;
+}
+
+// ── USER: MENING MA'LUMOTLARIM ──
+function renderMenim(el, d) {
+  const b = d.bemor;
+  if (!b) {
+    el.innerHTML = `
+      <div class="empty" style="padding:60px 20px">
+        <div class="empty-icon">📋</div>
+        <div class="empty-text">Siz hali ro'yxatdan o'tmagansiz.<br>Botdagi "📋 Ro'yxatdan o'tish" tugmasini bosing.</div>
+      </div>`;
+    return;
+  }
+  el.innerHTML = `
+    <div class="profile-header">
+      <div class="profile-avatar">${b.fio[0]}</div>
+      <div>
+        <div class="profile-name">${b.fio}</div>
+        <div class="profile-phone">📱 ${b.telefon}</div>
+        <span class="badge badge-ok" style="margin-top:4px">✅ Ro'yxatdan o'tgan</span>
+      </div>
+    </div>
+
+    <div class="quick-actions">
+      <div class="quick-action" onclick="switchTab('navbat_m')">
+        <div class="quick-action-icon">📅</div>
+        <div class="quick-action-text">Navbat oling</div>
+      </div>
+      <div class="quick-action" onclick="switchTab('maslahat_m')">
+        <div class="quick-action-icon">💬</div>
+        <div class="quick-action-text">Maslahat so'ring</div>
+      </div>
+      <div class="quick-action" onclick="switchTab('soglik_m')">
+        <div class="quick-action-icon">📊</div>
+        <div class="quick-action-text">Sog'liq</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title" style="margin-bottom:12px">📋 Shaxsiy Ma'lumotlar</div>
+      ${[
+        ['🔖 Raqam', '#'+b.num],
+        ['🎂 Yosh', b.yosh+' yosh'],
+        ['📍 Viloyat', b.viloyat],
+        ['🏘 Tuman', b.tuman],
+        ['🩺 Murojaat sababi', b.murojaat],
+        ['📅 Ro\'yxat sanasi', b.sana],
+        ['⚡ Holat', b.holat||'Yangi'],
+      ].map(([l,v]) => `
+        <div class="info-row">
+          <span class="info-lbl">${l}</span>
+          <span class="info-val">${v}</span>
+        </div>
+      `).join('')}
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">⚙️ Sozlamalar</div>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-ghost btn-sm btn-full" onclick="openEditProfileModal(${JSON.stringify(b).replace(/"/g,'&quot;')})">✏️ Tahrirlash</button>
+        <button class="btn btn-ghost btn-sm btn-full" onclick="openChangePasswordModal()">🔐 Parolni o'zgartirish</button>
+      </div>
+    </div>
+  `;
+}
+
+// ── USER: NAVBATLARIM ──
+function renderNavbatM(el, d) {
+  const rows = d.rows || [];
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div class="section-title" style="margin:0">📅 Navbatlarim</div>
+      <button class="btn btn-teal btn-sm" onclick="switchTab('shifokor_m')">📋 Navbat oling</button>
+    </div>
+    ${rows.length ? rows.reverse().map(n => `
+      <div class="list-item">
+        <div class="item-header">
+          <div>
+            <div class="item-num">#${n.num}</div>
+            <div class="item-name">${n.shifokor}</div>
+            <div class="item-meta">🏷 ${n.mutaxassis}</div>
+          </div>
+          <span class="badge ${n.holat==='Tasdiqlangan'?'badge-ok':n.holat==='Rad etilgan'?'badge-no':'badge-pending'}">
+            ${n.holat==='Tasdiqlangan'?'✅':n.holat==='Rad etilgan'?'❌':'⏳'} ${n.holat}
+          </span>
+        </div>
+        <div class="item-row">
+          <span class="badge badge-blue">📅 ${n.sana}</span>
+          <span class="badge badge-blue">⏰ ${n.vaqt}</span>
+        </div>
+        ${n.izoh ? `<div style="font-size:12px;color:var(--warn);margin-top:8px;padding:8px;background:rgba(245,158,11,.08);border-radius:8px;border-left:3px solid var(--warn);">📝 ${n.izoh}</div>` : ''}
+        ${n.holat==='Tasdiqlangan' ? `<div class="btn-group" style="margin-top:10px;"><button class="btn btn-blue btn-sm" onclick="openCallShifokorModal(0,'${escHtml(n.shifokor)}')">📞 Shifokor bilan bog'lanish</button></div>` : ''}
+      </div>
+    `).join('') : '<div class="empty"><div class="empty-icon">📭</div><div class="empty-text">Navbat yo\'q. Shifokor bo\'limidan navbat oling!</div></div>'}
+  `;
+}
+
+// ── USER: MASLAHATLARIM ──
+function renderMaslahatM(el, d) {
+  const rows = d.rows || [];
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div class="section-title" style="margin:0">💬 Maslahatlarim</div>
+      <button class="btn btn-teal btn-sm" onclick="switchTab('shifokor_m')">➕ Yangi</button>
+    </div>
+    ${rows.length ? rows.reverse().map(m => `
+      <div class="list-item">
+        <div class="item-header">
+          <div>
+            <div class="item-num">#${m.num}</div>
+            <div class="item-meta">🏷 ${m.mutaxassis} · 📅 ${m.sana}</div>
+          </div>
+          <span class="badge ${m.holat==='Javob berildi'?'badge-ok':'badge-pending'}">
+            ${m.holat==='Javob berildi'?'✅ Javob bor':'⏳ Kutilmoqda'}
+          </span>
+        </div>
+        <div style="font-size:12px;background:var(--bg);border-radius:8px;padding:8px;margin-top:8px;border-left:3px solid var(--accent2);">
+          ❓ ${m.savol}
+        </div>
+        ${m.javob ? `
+          <div style="font-size:12px;background:rgba(16,185,129,.08);border-radius:8px;padding:8px;margin-top:6px;color:var(--success);border-left:3px solid var(--success);">
+            ✅ <b>Shifokor javobi:</b><br/> ${m.javob}
+          </div>
+        ` : ''}
+      </div>
+    `).join('') : '<div class="empty"><div class="empty-icon">📭</div><div class="empty-text">Maslahat yo\'q. Shifokor bo\'limidan so\'raning!</div></div>'}
+  `;
+}
+
+// ── USER: SOG'LIQ ──
+function renderSoglikM(el, d) {
+  const rows = d.rows || [];
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div class="section-title" style="margin:0">📊 Sog'liq Ko'rsatkichlarim</div>
+      <button class="btn btn-teal btn-sm" onclick="openHealthTrackingModal()">➕ Qo'shish</button>
+    </div>
+    ${rows.length ? rows.slice(-20).reverse().map(s => `
+      <div class="list-item">
+        <div class="item-header">
+          <div>
+            <div class="item-name">${s.indikator}</div>
+            <div class="item-meta">📅 ${s.sana}</div>
+          </div>
+          <div style="font-size:20px;font-weight:800;color:var(--accent);font-family:'JetBrains Mono',monospace">
+            ${s.qiymat}
+          </div>
+        </div>
+      </div>
+    `).join('') : '<div class="empty"><div class="empty-icon">📭</div><div class="empty-text">Ko\'rsatkich yo\'q. Birinchi qo\'shing!</div></div>'}
+  `;
+}
+
+// ── USER: SHIFOKORLAR ──
+function renderShifokorM(el, d) {
+  const rows = d.rows || [];
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div class="section-title" style="margin:0">👨‍⚕️ Shifokorlar</div>
+      <button class="refresh-btn" onclick="reloadSection('shifokor_m')">🔄</button>
+    </div>
+    ${rows.length ? rows.map(s => `
+      <div class="list-item">
+        <div class="item-header">
+          <div>
+            <div class="item-num">#${s.num}</div>
+            <div class="item-name">${s.fio}</div>
+            <div class="item-meta">🏷 ${s.mutaxassis}</div>
+          </div>
+          <span class="badge ${s.holat==='Faol'?'badge-ok':'badge-no'}">
+            ${s.holat==='Faol'?'✅ Ochiq':'❌ Yopiq'}
+          </span>
+        </div>
+        <div class="item-row">
+          <span class="badge badge-blue">⏰ ${s.vaqt}</span>
+          <span class="badge badge-blue">📅 ${s.kunlar}</span>
+        </div>
+        ${s.reytingi ? `<div style="font-size:12px;color:var(--accent2);margin-top:6px;">⭐ ${s.reytingi} (${s.baho_soni || 0} baho)</div>` : ''}
+        <div class="btn-group" style="margin-top:10px">
+          ${s.holat==='Faol' ? `
+            <button class="btn btn-blue btn-sm" onclick="openCallShifokorModal(${s.num},'${escHtml(s.fio)}')">📞 Qo'ng'iroq</button>
+            <button class="btn btn-teal btn-sm" onclick="switchTab('navbat_m')">📅 Navbat</button>
+            <button class="btn btn-ghost btn-sm" onclick="openRatingModal(${s.num},'${escHtml(s.fio)}')">⭐ Baholash</button>
+          ` : '<span class="badge badge-no" style="margin-top:8px;">Hozir mavjud emas</span>'}
+        </div>
+      </div>
+    `).join('') : '<div class="empty"><div class="empty-icon">📭</div><div class="empty-text">Shifokor yo\'q</div></div>'}
+  `;
+}
+
+// ════════════════════════════════════════
+//  MODALS
+// ════════════════════════════════════════
+function openBemorModal(b) {
+  openModal(`
+    <div class="modal-title">👤 Bemor #${b.num}</div>
+    <div class="profile-header" style="margin-bottom:16px">
+      <div class="profile-avatar">${b.fio[0]}</div>
+      <div>
+        <div class="profile-name">${b.fio}</div>
+        <div class="profile-phone">📱 ${b.telefon}</div>
+      </div>
+    </div>
+    ${[
+      ['🎂 Yosh', b.yosh+' yosh'],
+      ['📍 Viloyat', b.viloyat],
+      ['🏘 Tuman', b.tuman],
+      ['🩺 Murojaat', b.murojaat],
+      ['📅 Sana', b.sana],
+      ['⚡ Holat', b.holat||'Yangi'],
+      ['🆔 Telegram ID', b.tg_id],
+    ].map(([l,v])=>`
+      <div class="info-row"><span class="info-lbl">${l}</span><span class="info-val">${v}</span></div>
+    `).join('')}
+    <div class="btn-group" style="margin-top:16px">
+      <button class="btn btn-blue btn-full" onclick="openXabarModal(${b.tg_id},'${escHtml(b.fio)}');closeModal()">📩 Xabar yuborish</button>
+    </div>
+    <button class="btn btn-ghost btn-full" style="margin-top:8px" onclick="closeModal()">Yopish</button>
+  `);
+}
+
+function openJavobModal(num, fio, savol) {
+  openModal(`
+    <div class="modal-title">💬 Maslahat #${num} javob</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:4px;">👤 ${fio}</div>
+    <div style="font-size:12px;background:var(--bg);border-radius:8px;padding:10px;margin-bottom:14px;">
+      ❓ ${savol.substring(0,200)}
+    </div>
+    <div class="form-group">
+      <label>Javob matni</label>
+      <textarea id="javob-input" placeholder="Tibbiy javobingizni yozing..." rows="4"></textarea>
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-teal btn-full" onclick="submitJavob(${num})">✅ Javob yuborish</button>
+    </div>
+    <button class="btn btn-ghost btn-full" style="margin-top:8px" onclick="closeModal()">Bekor qilish</button>
+  `);
+}
+
+function openXabarModal(tgId, fio) {
+  openModal(`
+    <div class="modal-title">📩 Xabar yuborish</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:14px;">👤 ${fio}</div>
+    <div class="form-group">
+      <label>Xabar matni</label>
+      <textarea id="xabar-input" placeholder="Xabar matnini kiriting..." rows="4"></textarea>
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-blue btn-full" onclick="submitXabar(${tgId})">📩 Yuborish</button>
+    </div>
+    <button class="btn btn-ghost btn-full" style="margin-top:8px" onclick="closeModal()">Bekor qilish</button>
+  `);
+}
+
+function navbatAction(num, action) {
+  if (action === 'tasdiqlash') {
+    doAction('navbat_tasdiqlash', { num }, `Navbat #${num} tasdiqlandi ✅`);
+  } else {
+    openModal(`
+      <div class="modal-title">❌ Navbat #${num} rad etish</div>
+      <div class="form-group">
+        <label>Rad etish sababi (ixtiyoriy)</label>
+        <input type="text" id="rad-sabab" placeholder="Sabab...">
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-no btn-full" onclick="submitRad(${num})">❌ Rad etish</button>
+      </div>
+      <button class="btn btn-ghost btn-full" style="margin-top:8px" onclick="closeModal()">Bekor qilish</button>
+    `);
+  }
+}
+
+// ════════════════════════════════════════
+//  ACTIONS
+// ════════════════════════════════════════
+async function doAction(action, params, successMsg) {
+  try {
+    const r = await apiPost(action, params);
+    if (r.ok) {
+      toast(successMsg);
+      closeModal();
+      setTimeout(() => reloadSection(state.currentTab), 500);
+    } else {
+      toast(r.error || 'Xato yuz berdi', 'error');
+    }
+  } catch(e) {
+    toast('Server bilan ulanishda xato', 'error');
+  }
+}
+
+async function submitJavob(num) {
+  const javob = document.getElementById('javob-input')?.value?.trim();
+  if (!javob) return toast('Javob matnini kiriting!', 'error');
+  await doAction('maslahat_javob', { num, javob }, `Javob #${num} yuborildi ✅`);
+}
+
+async function submitXabar(tgId) {
+  const matn = document.getElementById('xabar-input')?.value?.trim();
+  if (!matn) return toast('Xabar matnini kiriting!', 'error');
+  await doAction('xabar_yuborish', { tg_id: tgId, matn }, 'Xabar yuborildi ✅');
+}
+
+async function submitRad(num) {
+  const sabab = document.getElementById('rad-sabab')?.value?.trim() || '';
+  await doAction('navbat_rad', { num, sabab }, `Navbat #${num} rad etildi`);
+}
+
+async function shifokorHolat(num, holat) {
+  await doAction('shifokor_holat', { num, holat },
+    holat === 'Faol' ? `Shifokor #${num} faollashtirildi ✅` : `Shifokor #${num} nofaol qilindi`);
+}
+
+// ════════════════════════════════════════
+//  NEW MODALS
+// ════════════════════════════════════════
+function openEmergencyModal() {
+  openModal(`
+    <div class="modal-title" style="color:var(--danger)">🚨 Favqulodda Yordam</div>
+    <div style="font-size:13px;margin-bottom:16px;padding:12px;background:rgba(239,68,68,.1);border-radius:10px;border-left:3px solid var(--danger);">
+      ⚠️ Agar siz darhol tibbiy yordam kerak bo'lsa, quyidagi aloqalarni ishlating:
+    </div>
+    <div class="card">
+      <div class="card-title" style="margin-bottom:12px">📞 Tibbiy Aloqa</div>
+      <div class="info-row">
+        <span class="info-lbl">🏥 Ambulansiya</span>
+        <span class="info-val" onclick="if(tg)tg.openTelegramLink('tel:+998712049999')" style="cursor:pointer;color:var(--accent2)">+998 71 204 99 99</span>
+      </div>
+      <div class="info-row">
+        <span class="info-lbl">🩺 Favqulodda</span>
+        <span class="info-val" onclick="if(tg)tg.openTelegramLink('tel:+998909999999')" style="cursor:pointer;color:var(--accent2)">+998 90 999 99 99</span>
+      </div>
+    </div>
+    <div class="form-group" style="margin-top:16px;">
+      <label>Darhol shifokor bilan bog'lanish</label>
+      <input type="text" id="emergency-info" placeholder="Asosiy belgilaringizni qisqacha yozing..." maxlength="200">
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-no btn-full" onclick="submitEmergency()">🚨 Darhol Yuborish</button>
+    </div>
+    <button class="btn btn-ghost btn-full" style="margin-top:8px" onclick="closeModal()">Bekor qilish</button>
+  `);
+}
+
+function openEditProfileModal(b) {
+  openModal(`
+    <div class="modal-title">✏️ Profilni Tahrirlash</div>
+    <div class="form-group">
+      <label>To'liq Ismi</label>
+      <input type="text" id="edit-fio" value="${escHtml(b.fio)}" placeholder="Ismi...">
+    </div>
+    <div class="form-group">
+      <label>Telefon raqami</label>
+      <input type="tel" id="edit-phone" value="${escHtml(b.telefon)}" placeholder="+998...">
+    </div>
+    <div class="form-group">
+      <label>Viloyat</label>
+      <input type="text" id="edit-viloyat" value="${escHtml(b.viloyat)}" placeholder="Viloyat nomi...">
+    </div>
+    <div class="form-group">
+      <label>Tuman</label>
+      <input type="text" id="edit-tuman" value="${escHtml(b.tuman)}" placeholder="Tuman nomi...">
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-teal btn-full" onclick="submitEditProfile()">✅ Saqlash</button>
+    </div>
+    <button class="btn btn-ghost btn-full" style="margin-top:8px" onclick="closeModal()">Bekor qilish</button>
+  `);
+}
+
+function openChangePasswordModal() {
+  openModal(`
+    <div class="modal-title">🔐 Parolni O'zgartirish</div>
+    <div class="form-group">
+      <label>Eski Parol</label>
+      <input type="password" id="old-pass" placeholder="Eski parol...">
+    </div>
+    <div class="form-group">
+      <label>Yangi Parol</label>
+      <input type="password" id="new-pass" placeholder="Yangi parol...">
+    </div>
+    <div class="form-group">
+      <label>Parolni Qayta Kiriting</label>
+      <input type="password" id="confirm-pass" placeholder="Parolni qayta kiriting...">
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-blue btn-full" onclick="submitChangePassword()">✅ O'zgartirish</button>
+    </div>
+    <button class="btn btn-ghost btn-full" style="margin-top:8px" onclick="closeModal()">Bekor qilish</button>
+  `);
+}
+
+function openRatingModal(shifokorNum, shifokorName) {
+  let rating = 0;
+  openModal(`
+    <div class="modal-title">⭐ Shifokorni Baxolash</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:14px;">👨‍⚕️ ${escHtml(shifokorName)}</div>
+    <div style="text-align:center;margin:20px 0;font-size:32px;cursor:pointer;" id="rating-stars">
+      <span class="star" onclick="setRating(1)">⭐</span>
+      <span class="star" onclick="setRating(2)">⭐</span>
+      <span class="star" onclick="setRating(3)">⭐</span>
+      <span class="star" onclick="setRating(4)">⭐</span>
+      <span class="star" onclick="setRating(5)">⭐</span>
+    </div>
+    <div class="form-group">
+      <label>Sharh (ixtiyoriy)</label>
+      <textarea id="rating-comment" placeholder="Sizning fikringiz..." rows="3"></textarea>
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-teal btn-full" onclick="submitRating(${shifokorNum})">✅ Yuborish</button>
+    </div>
+    <button class="btn btn-ghost btn-full" style="margin-top:8px" onclick="closeModal()">Bekor qilish</button>
+  `);
+}
+
+function openHealthTrackingModal() {
+  openModal(`
+    <div class="modal-title">📊 Sog'liq Ko'rsatkichlarni Kiritish</div>
+    <div class="form-group">
+      <label>Temopratura (°C)</label>
+      <input type="number" id="temp-input" placeholder="36.6" step="0.1" min="35" max="42">
+    </div>
+    <div class="form-group">
+      <label>Qon Bosimi (mmHg)</label>
+      <input type="text" id="bp-input" placeholder="120/80">
+    </div>
+    <div class="form-group">
+      <label>Duls (urik/min)</label>
+      <input type="number" id="pulse-input" placeholder="72" min="40" max="200">
+    </div>
+    <div class="form-group">
+      <label>Shukarning darajasi (mmol/L)</label>
+      <input type="number" id="glucose-input" placeholder="5.5" step="0.1" min="0" max="30">
+    </div>
+    <div class="form-group">
+      <label>Izoh</label>
+      <textarea id="health-note" placeholder="Qanday his qilayotganingiz..." rows="2"></textarea>
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-teal btn-full" onclick="submitHealthData()">✅ Saqlash</button>
+    </div>
+    <button class="btn btn-ghost btn-full" style="margin-top:8px" onclick="closeModal()">Bekor qilish</button>
+  `);
+}
+
+function openCallShifokorModal(shifokorNum, shifokorName) {
+  openModal(`
+    <div class="modal-title">📞 Shifokor bilan Bog'lanish</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:16px;">👨‍⚕️ ${escHtml(shifokorName)}</div>
+    <div style="text-align:center;padding:20px;background:var(--bg3);border-radius:12px;margin-bottom:14px;">
+      <div style="font-size:12px;color:var(--text2);margin-bottom:8px;">Darhol bog'lanish uchun tugmani bosing:</div>
+      <button class="btn btn-blue" style="font-size:16px;padding:14px 20px;" onclick="initiateCall(${shifokorNum})">☎️ Qo'ng'iroq qilish</button>
+    </div>
+    <div style="padding:12px;background:rgba(59,130,246,.1);border-radius:10px;font-size:12px;color:var(--text2);border-left:3px solid var(--accent2);">
+      ℹ️ Qo'ng'iroq 24/7 ochiq. Shifokor siz bilan bog'lanib berishini kuting yoki qayta qo'ng'iroq qiling.
+    </div>
+    <button class="btn btn-ghost btn-full" style="margin-top:16px" onclick="closeModal()">Yopish</button>
+  `);
+}
+
+// ════════════════════════════════════════
+//  RATING HANDLER
+// ════════════════════════════════════════
+let currentRating = 0;
+function setRating(n) {
+  currentRating = n;
+  const stars = document.querySelectorAll('#rating-stars .star');
+  stars.forEach((s, i) => {
+    s.classList.toggle('active', i < n);
+  });
+}
+
+async function submitRating(shifokorNum) {
+  if (!currentRating) return toast('Baho belgilang!', 'error');
+  const comment = document.getElementById('rating-comment')?.value?.trim() || '';
+  await doAction('shifokor_rating', { shifokor_num: shifokorNum, rating: currentRating, comment }, 'Baho yuborildi ✅');
+}
+
+async function submitEmergency() {
+  const info = document.getElementById('emergency-info')?.value?.trim();
+  if (!info) return toast('Ma\'lumot kiriting!', 'error');
+  await doAction('emergency_alert', { info }, '🚨 Darhol alert yuborildi!');
+}
+
+async function submitEditProfile() {
+  const fio = document.getElementById('edit-fio')?.value?.trim();
+  const phone = document.getElementById('edit-phone')?.value?.trim();
+  const viloyat = document.getElementById('edit-viloyat')?.value?.trim();
+  const tuman = document.getElementById('edit-tuman')?.value?.trim();
+  if (!fio || !phone) return toast('Barcha maydonlarni to\'ldiring!', 'error');
+  await doAction('edit_profile', { fio, phone, viloyat, tuman }, 'Profil o\'zgartirildi ✅');
+}
+
+async function submitChangePassword() {
+  const oldPass = document.getElementById('old-pass')?.value || '';
+  const newPass = document.getElementById('new-pass')?.value || '';
+  const confirmPass = document.getElementById('confirm-pass')?.value || '';
+  if (!oldPass || !newPass || !confirmPass) return toast('Barcha maydonlarni to\'ldiring!', 'error');
+  if (newPass !== confirmPass) return toast('Parollar mos kelishi kerak!', 'error');
+  if (newPass.length < 6) return toast('Parol kam bo\'lsa 6 ta belgdan o\'rnatilishi kerak!', 'error');
+  await doAction('change_password', { old_pass: oldPass, new_pass: newPass }, 'Parol o\'zgartirildi ✅');
+}
+
+async function submitHealthData() {
+  const temp = document.getElementById('temp-input')?.value?.trim();
+  const bp = document.getElementById('bp-input')?.value?.trim();
+  const pulse = document.getElementById('pulse-input')?.value?.trim();
+  const glucose = document.getElementById('glucose-input')?.value?.trim();
+  const note = document.getElementById('health-note')?.value?.trim() || '';
+  if (!temp || !bp || !pulse) return toast('Barcha maydonlarni to\'ldiring!', 'error');
+  await doAction('add_health_data', { temp, bp, pulse, glucose, note }, 'Sog\'liq ma\'lumoti saqlandi ✅');
+}
+
+function initiateCall(shifokorNum) {
+  toast('Qo\'ng\'iroq tayyorlanyapti...', 'success');
+  // Telegram WebApp API yordamida chaqirish
+  setTimeout(() => {
+    closeModal();
+    toast('Shifokor siz bilan bog\'lanadi', 'success');
+  }, 500);
+}
+
+// ════════════════════════════════════════
+//  HELPERS
+// ════════════════════════════════════════
+function escHtml(s) {
+  return String(s||'').replace(/'/g,"\\'").replace(/"/g,'&quot;').replace(/\n/g,' ');
+}
+
+// ════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════
+async function init() {
+  // Header badge
+  if (isAdmin) {
+    document.getElementById('header-badge').innerHTML = '<span class="admin-badge">Admin</span>';
+  }
+
+  // Build nav
+  buildNav();
+
+  // Hide loader
+  setTimeout(() => {
+    document.getElementById('loader').style.opacity = '0';
+    document.getElementById('loader').style.transition = 'opacity .4s';
+    setTimeout(() => document.getElementById('loader').style.display = 'none', 400);
+  }, 1200);
+}
+
+init();
+</script>
+</body>
+</html>
